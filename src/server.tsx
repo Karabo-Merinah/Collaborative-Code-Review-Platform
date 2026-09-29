@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import { testConnection } from "./config/database"
 import authRoutes from "./routes/auth_route"
 import userRoutes from "./routes/userRoutes"
+import projectRoutes from "./routes/projectRoutes"
 
 dotenv.config()
 
@@ -12,6 +13,7 @@ const port = process.env.PORT
 app.use(express.json())
 app.use("/api/auth", authRoutes)
 app.use("/api/users",userRoutes)
+app.use("/api/projects",projectRoutes)
 
 app.get("/", (request, response) => {
     response.send("Collaborative code review platform")
