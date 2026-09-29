@@ -1,7 +1,8 @@
 import express from "express";
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
 import connectionPool from "../config/database";
 import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 
 const router = express.Router()
 
@@ -52,7 +53,64 @@ router.post("/register", async (req: Request, res: Response) => {
     }
     catch (error) {
         console.log(error)
-        res.status(500).json({ message: "" })
+        res.status(500).json({ message: "Something went wrong" })
+    }
+})
+
+router.post("/login", async (req: Request, res: Response) => {
+    try {
+        const email = req.body.email
+        const password = req.body.password
+
+        //Ensures that the fields are required and filled
+        if (!email) {
+            res.status(400).json({ message: "Email is required" })
+            return;
+        }
+        if (!password) {
+            res.status(400).json({ message: "Password is required" })
+            return;
+        }
+        //Find user by email 
+
+        const result = await connectionPool.query(
+            "SELECT id,name,email,role,password_hash FROM users WHERE email=$1", [email]
+        )
+        // if no result is returned throw an error
+        if (result.rows.length === 0) {
+            res.status(401).json({ message: "Invalid email or password" })
+            return;
+        }
+        const user = result.rows[0]
+
+        //compare the typed password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, user.password_hash)
+
+        if (!isMatch) {
+            res.status(401).json({ message: "Invalid email or password" })
+            return;
+        }
+        //Retrieve the jwt code fro .env file
+        const secret_code = process.env.JWT_CODE
+
+        //check if there's no secrete code 
+
+        if (!secret_code) {
+            console.log("JWT secrete code is missing")
+            res.status(500).json({ message: "Something went wrong" })
+            return
+        }
+
+        //Create the token 
+        const token = jwt.sign({ id: user.id, role: user.role }, secret_code, { expiresIn: "1h" })
+
+        res.status(200).json({
+            user: {id: user.id,name: user.name,email: user.email,role: user.role}
+        })
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" })
     }
 })
 
