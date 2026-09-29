@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import connectionPool from "../config/database";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { allowReviewer, allowSubmitters, authenticateToken } from "../middleware/authenticationMiddleware";
+
 
 const router = express.Router()
 
@@ -27,6 +29,7 @@ router.post("/register", async (req: Request, res: Response) => {
             res.status(400).json({ message: "Password is required" })
             return;
         }
+
         //Limits the role to 2 values and throw error if the values are not met .
         if (role !== "reviewer" && role !== "submitter") {
             res.status(400).json({ message: "Role can be either reviewer or submitter." })
@@ -105,7 +108,7 @@ router.post("/login", async (req: Request, res: Response) => {
         const token = jwt.sign({ id: user.id, role: user.role }, secret_code, { expiresIn: "1h" })
 
         res.status(200).json({
-            user: {id: user.id,name: user.name,email: user.email,role: user.role}
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }, token
         })
     }
     catch (error) {
@@ -114,4 +117,15 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 })
 
+router.get("/me", authenticateToken, (req: any, res: Response) => {
+    res.status(200).json({ message: "You are logged in ", user: req.user })
+})
+
+router.get("/reviewer", authenticateToken, allowReviewer, (req: Request, res: Response) => {
+    res.status(200).json({ message: "You are verified as a reviewer" })
+})
+
+router.get("/submitter", authenticateToken, allowSubmitters, (req: Request, res: Response) => {
+    res.status(200).json({ message: "You are verified as a submitter" })
+})
 export default router
