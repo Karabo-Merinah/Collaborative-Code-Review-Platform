@@ -34,7 +34,8 @@ router.put("/:id", authenticateToken, async (req: any, res: Response) => {
         //Allow only logged in users to edit
 
         if (req.user.id !== Number(userid)) {
-            res.status(403).json({ message: "You can only eidt your own profile" })
+            res.status(403).json({ message: "You can only edit your own profile" })
+            return;
         }
         const name = req.body.name
         const email = req.body.email
@@ -66,7 +67,7 @@ router.put("/:id", authenticateToken, async (req: any, res: Response) => {
 
 //Deleting user profile
 
-router.delete("/id", authenticateToken, async (req: any, res: Response) => {
+router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
     try {
         const userid = req.params.id
 
@@ -83,7 +84,8 @@ router.delete("/id", authenticateToken, async (req: any, res: Response) => {
             res.status(404).json({ message: "User not found" })
             return;
         }
-        res.status(204);
+        res.status(204).send()
+        return;
     }
     catch (error) {
         res.status(500).json({ message: "Something went wrong" })
