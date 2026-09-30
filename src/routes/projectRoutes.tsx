@@ -36,7 +36,7 @@ router.get("/", authenticateToken, async (req: any, res: Response) => {
 
     try {
         const listProjects = await connectionPool.query(
-            "SELECT name,description,owner_id,created_at  FROM  projects  "
+            "SELECT id,name,description,owner_id,created_at  FROM  projects  "
         )
         res.status(200).json(listProjects.rows)
     }
@@ -100,6 +100,46 @@ router.post("/:id/members", authenticateToken, async (req: any, res: Response) =
     catch (error) {
         console.log(error)
         res.status(500).json({ message: "Something went wrong" })
+    }
+})
+
+router.delete("/:id/members/:userId", authenticateToken, async (req: any, res: Response) => {
+    try {
+        const projectId = req.params.id
+        const user_id_to_remove = req.params.userId
+
+        //check if the project exists and get its owner
+        const projectresults = await connectionPool.query(
+            "SELECT owner_id FROM projects WHERE id=$1", [projectId]
+        )
+        if (projectresults.rows.length === 0) {
+            res.status(404).json({ message: "Project is  not found" })
+            return;
+        }
+        const project = projectresults.rows[0]
+
+        //Ensures only the project owner can remove members
+        if (project.owner_id !== req.user.id) {
+            res.status(403).json({ message: "Only project owner can remove members" })
+            return;
+        }
+
+        //Check if the memebr exists before removing them 
+
+        const existing_member = await connectionPool.query(
+            "SELECT id FROM project_members WHERE project_id=$1 AND user_id=$2", [projectId, user_id_to_remove]
+        )
+        if (existing_member.rows.length === 0) {
+            res.status(404).json({ message: "User is not a member of this project" })
+            return;
+        }
+        //Remove  member
+        await connectionPool.query("DELETE FROM project_members WHERE project_id=$1 AND user_id=$2", [projectId, user_id_to_remove])
+        res.status(204).send()
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong " })
     }
 })
 
