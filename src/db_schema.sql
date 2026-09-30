@@ -38,3 +38,9 @@ content TEXT NOT NULL,
 created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE project_members(
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER NOT NULL REFERENCES projects(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    added_at  TIMESTAMP DEFAULT NOW()
+);
