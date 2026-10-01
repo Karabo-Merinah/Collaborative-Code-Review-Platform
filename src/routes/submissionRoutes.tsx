@@ -48,4 +48,35 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
     }
 })
 
+//Listing all submission for a project 
+
+router.post("/:id/submissions",authenticateToken,async(req:any,res:Response)=>{
+   
+    try{
+
+        const project_id=req.params.id 
+
+        //Check if the project exists 
+        const results=await connectionPool.query(
+            "SELECT id  FROM projects WHERE id=$1",[project_id]
+        )
+        if(results.rows.length===0){
+            res.status(404).json({message:"No project exists with this id."})
+            return;
+
+        }
+        //after validating store the results of the lists 
+        const submissionList=await connectionPool.query(
+            "SELECT * FROM submission WHERE project_id=$1",[project_id]
+        )
+
+       res.status(200).json(submissionList.rows)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json({message:"Something went wrong "})
+    }
+})
+
+
 export default router
