@@ -50,70 +50,102 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 
 //Listing all submission for a project 
 
-router.post("/:id/submissions",authenticateToken,async(req:any,res:Response)=>{
-   
-    try{
+router.post("/:id/submissions", authenticateToken, async (req: any, res: Response) => {
 
-        const project_id=req.params.id 
+    try {
+
+        const project_id = req.params.id
 
         //Check if the project exists 
-        const results=await connectionPool.query(
-            "SELECT id  FROM projects WHERE id=$1",[project_id]
+        const results = await connectionPool.query(
+            "SELECT id  FROM projects WHERE id=$1", [project_id]
         )
-        if(results.rows.length===0){
-            res.status(404).json({message:"No project exists with this id."})
+        if (results.rows.length === 0) {
+            res.status(404).json({ message: "No project exists with this id." })
             return;
 
         }
         //after validating store the results of the lists 
-        const submissionList=await connectionPool.query(
-            "SELECT * FROM submission WHERE project_id=$1",[project_id]
+        const submissionList = await connectionPool.query(
+            "SELECT * FROM submission WHERE project_id=$1", [project_id]
         )
 
-       res.status(200).json(submissionList.rows)
+        res.status(200).json(submissionList.rows)
     }
-    catch(error){
+    catch (error) {
         console.log(error)
-        res.status(500).json({message:"Something went wrong "})
+        res.status(500).json({ message: "Something went wrong " })
     }
 })
 
 //Viewing a specific submission by providing id 
 
-router.get("/:id",authenticateToken,async(req:any,res:Response)=>{
+router.get("/:id", authenticateToken, async (req: any, res: Response) => {
 
-    try{
-     //receive submission id 
+    try {
+        //receive submission id 
 
-     const submission_id=req.params.id 
+        const submission_id = req.params.id
 
-     //checks if the id it is a number
+        //checks if the id it is a number
 
-     if(!Number(submission_id)){
-        res.status(400).json({message:"Submission id must be a number"})
-        return;
-     }
-    
-     //Checks if there's any submissions with that id 
+        if (!Number(submission_id)) {
+            res.status(400).json({ message: "Submission id must be a number" })
+            return;
+        }
 
-     const submission_results=await connectionPool.query(
-        "SELECT * FROM submissions WHERE id=$1",[submission_id]
-     )
+        //Checks if there's any submissions with that id 
 
-     //checks the length of the results if it zero there is no submission with that id 
+        const submission_results = await connectionPool.query(
+            "SELECT * FROM submissions WHERE id=$1", [submission_id]
+        )
 
-     if(submission_results.rows.length===0){
-        res.status(404).json({message:"No results found for this id "})
-        return;
-     }
-     //show success  results 
-     res.status(200).json(submission_results.rows[0])
+        //checks the length of the results if it zero there is no submission with that id 
+
+        if (submission_results.rows.length === 0) {
+            res.status(404).json({ message: "No results found for this id " })
+            return;
+        }
+        //show success  results 
+        res.status(200).json(submission_results.rows[0])
 
     }
-    catch(error){
+    catch (error) {
         console.log(error)
-        res.status(500).json({message:"Something went wrong "})
+        res.status(500).json({ message: "Something went wrong " })
     }
 })
+
+//Updating  submission status 
+
+router.patch("/:id/status", authenticateToken, async (req: any, res: Response) => {
+
+    try {
+        const submission_id = req.params.id
+        const updateStatus = req.body.status
+        //Specify the  allowed values for status 
+        const statuses = ["pending", "in_review", "approved", "changes_requested"]
+
+        if (!updateStatus || !updateStatus.includes(statuses)) {
+            res.status(400).json({ message: "Status is required and must be either :pending,in_review,approved,changes_requested" })
+            return;
+        }
+        const updatedStatus = await connectionPool.query(
+            "UPDATE submissions SET status=$1 WHERE id=$2 RETURNING id,project_id ,submitted_by,code_content, status ", [updateStatus, submission_id]
+        )
+        if (updatedStatus.rows.length === 0) {
+            res.status(404).json({ message: "No submission with id exists" })
+            return;
+        }
+
+        res.status(200).json(updateStatus.rows[0])
+
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong " })
+    }
+})
+
 
 export default router
