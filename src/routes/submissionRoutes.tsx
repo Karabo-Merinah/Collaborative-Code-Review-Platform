@@ -36,7 +36,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
         const submitter = req.user.id
 
         const createSubmission = await connectionPool.query(
-            "INSERT INTO submissions (project_id,submitted_by,code_content) VALUES($1,$2,$3,$4) RETURNING id,project_id,submitted_by,code_content,status,created_at",
+            "INSERT INTO submissions (project_id,submitted_by,code_content) VALUES($1,$2,$3) RETURNING id,project_id,submitted_by,code_content,status,created_at",
             [project_id, submitter, code_content]
         )
         res.status(201).json(createSubmission.rows[0])
@@ -48,35 +48,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
     }
 })
 
-//Listing all submission for a project 
 
-router.post("/:id/submissions", authenticateToken, async (req: any, res: Response) => {
-
-    try {
-
-        const project_id = req.params.id
-
-        //Check if the project exists 
-        const results = await connectionPool.query(
-            "SELECT id  FROM projects WHERE id=$1", [project_id]
-        )
-        if (results.rows.length === 0) {
-            res.status(404).json({ message: "No project exists with this id." })
-            return;
-
-        }
-        //after validating store the results of the lists 
-        const submissionList = await connectionPool.query(
-            "SELECT * FROM submission WHERE project_id=$1", [project_id]
-        )
-
-        res.status(200).json(submissionList.rows)
-    }
-    catch (error) {
-        console.log(error)
-        res.status(500).json({ message: "Something went wrong " })
-    }
-})
 
 //Viewing a specific submission by providing id 
 
@@ -126,7 +98,7 @@ router.patch("/:id/status", authenticateToken, async (req: any, res: Response) =
         //Specify the  allowed values for status 
         const statuses = ["pending", "in_review", "approved", "changes_requested"]
 
-        if (!updateStatus || !updateStatus.includes(statuses)) {
+        if (!updateStatus || !statuses.includes(updateStatus)) {
             res.status(400).json({ message: "Status is required and must be either :pending,in_review,approved,changes_requested" })
             return;
         }
@@ -138,7 +110,7 @@ router.patch("/:id/status", authenticateToken, async (req: any, res: Response) =
             return;
         }
 
-        res.status(200).json(updateStatus.rows[0])
+        res.status(200).json(updatedStatus.rows[0])
 
     }
     catch (error) {
@@ -162,7 +134,7 @@ router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
         }
 
         const delete_results = await connectionPool.query(
-            "DELETE FROM submissions WHERE id=$1 ", [id_to_delete]
+            "DELETE FROM submissions WHERE id=$1 RETURNING id", [id_to_delete]
         )
         //check if id exists
         if (delete_results.rows.length === 0) {
