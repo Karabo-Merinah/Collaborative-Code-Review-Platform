@@ -149,4 +149,42 @@ router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
     }
 })
 
+//Adding comments 
+router.post("/:id/comments", authenticateToken, async (req: any, res: Response) => {
+    try {
+        const submission_id = req.params.id
+        const comment = req.body.content
+
+        //Only reviewers are allowed to comment
+        if (req.user.role !== "reviewer") {
+            res.status(403).json({ message: "Only reviewers are allowed to comment" })
+            return;
+        }
+        if (!comment) {
+            res.status(400).json({ message: "Comment is required." })
+        }
+
+        //Check if submission with the id exists 
+        const submission_res = await connectionPool.query(
+            "SELECT id FROM submission WHERE id=$1", [submission_id]
+        )
+
+        //if there's no results then there's no submission with that id 
+        if (submission_res.rows.length === 0) {
+            res.status(404).json({ message: "Submission with this id doesn't exist" })
+            return;
+        }
+
+        const commenter_id = req.user.id
+
+        const writeComment = await connectionPool.query(
+            "INSERT INTO comments(submission_id,author_id,content) VALUES($1,$2,$3) RETURNING id,submission_id,author_id,content,created_at", [submission_id, commenter_id, comment]
+        )
+        res.status(201).json(writeComment.rows[0])
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" })
+    }
+})
 export default router
