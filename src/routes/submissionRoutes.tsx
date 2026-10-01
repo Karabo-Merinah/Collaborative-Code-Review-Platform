@@ -78,5 +78,42 @@ router.post("/:id/submissions",authenticateToken,async(req:any,res:Response)=>{
     }
 })
 
+//Viewing a specific submission by providing id 
+
+router.get("/:id",authenticateToken,async(req:any,res:Response)=>{
+
+    try{
+     //receive submission id 
+
+     const submission_id=req.params.id 
+
+     //checks if the id it is a number
+
+     if(!Number(submission_id)){
+        res.status(400).json({message:"Submission id must be a number"})
+        return;
+     }
+    
+     //Checks if there's any submissions with that id 
+
+     const submission_results=await connectionPool.query(
+        "SELECT * FROM submissions WHERE id=$1",[submission_id]
+     )
+
+     //checks the length of the results if it zero there is no submission with that id 
+
+     if(submission_results.rows.length===0){
+        res.status(404).json({message:"No results found for this id "})
+        return;
+     }
+     //show success  results 
+     res.status(200).json(submission_results.rows[0])
+
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json({message:"Something went wrong "})
+    }
+})
 
 export default router
