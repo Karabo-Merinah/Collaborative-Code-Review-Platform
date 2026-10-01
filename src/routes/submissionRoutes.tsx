@@ -147,5 +147,34 @@ router.patch("/:id/status", authenticateToken, async (req: any, res: Response) =
     }
 })
 
+//deleting submission
+
+router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
+
+    try {
+
+        const id_to_delete = req.params.id
+
+        //check if it is a number
+        if (!Number(id_to_delete)) {
+            res.status(400).json({ message: "Submission id must be a number" })
+            return;
+        }
+
+        const delete_results = await connectionPool.query(
+            "DELETE FROM submissions WHERE id=$1 ", [id_to_delete]
+        )
+        //check if id exists
+        if (delete_results.rows.length === 0) {
+            res.status(404).json({ message: "Submission id is not found" })
+            return;
+        }
+        res.status(204).send()
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" })
+    }
+})
 
 export default router
