@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken"
 
-export function authenticateToken(req: any, res: Response, next: NextFunction) {
+export function authenticateToken(req: Request, res: Response, next: NextFunction) {
     const authenticateHeader = req.headers.authorization
 
     if (!authenticateHeader) {
@@ -46,22 +46,26 @@ export function authenticateToken(req: any, res: Response, next: NextFunction) {
     }
 
 }
-export function allowReviewer(req: any, res: Response, next: NextFunction) {
+export function allowReviewer(req: Request, res: Response, next: NextFunction) {
     if (!req.user) {
         res.status(401).json({ message: "You have to be logged in first" })
+        return;
     }
     if (req.user.role !== "reviewer") {
         res.status(403).json({ message: "This is only permitted for reviewers" })
+        return;
     }
     next()
 }
 
-export function allowSubmitters(req: any, res: Response, next: NextFunction) {
+export function allowSubmitters(req: Request, res: Response, next: NextFunction) {
     if (!req.user) {
         res.status(401).json({ message: "You have to be logged in first" })
+        return;
     }
     if (req.user.role !== "submitter") {
         res.status(403).json({ message: "This is only permitted for submitters" })
+        return;
     }
     next()
 }

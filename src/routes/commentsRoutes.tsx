@@ -1,11 +1,11 @@
-import express,{ Response } from "express";
+import express,{ Response,Request } from "express";
 import { authenticateToken } from "../middleware/authenticationMiddleware";
 import connectionPool from "../config/database";
 
 const router=express.Router()
 
 //updating comment 
-router.patch("/:id",authenticateToken,async(req:any,res:Response)=>{
+router.patch("/:id",authenticateToken,async(req:Request,res:Response)=>{
 
     try{
         
@@ -47,7 +47,7 @@ router.patch("/:id",authenticateToken,async(req:any,res:Response)=>{
 
 //deleting comment of a given id 
 
-router.delete("/:id",authenticateToken,async(req:any,res:Response)=>{
+router.delete("/:id",authenticateToken,async(req:Request,res:Response)=>{
 
     try{
         const id=req.params.id 

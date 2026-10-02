@@ -117,7 +117,7 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 })
 
-router.get("/me", authenticateToken, (req: any, res: Response) => {
+router.get("/me", authenticateToken, (req: Request, res: Response) => {
     res.status(200).json({ message: "You are logged in ", user: req.user })
 })
 

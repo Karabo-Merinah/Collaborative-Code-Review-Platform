@@ -1,11 +1,11 @@
-import express, { Response } from "express"
+import express, { Response ,Request} from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
 
 const router = express.Router()
 
 //Create project using post method
-router.post("/", authenticateToken, async (req: any, res: Response) => {
+router.post("/", authenticateToken, async (req: Request, res: Response) => {
     try {
         const name = req.body.name
         const description = req.body.description
@@ -32,7 +32,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 
 //Listing projects 
 
-router.get("/", authenticateToken, async (req: any, res: Response) => {
+router.get("/", authenticateToken, async (req: Request, res: Response) => {
 
     try {
         const listProjects = await connectionPool.query(
@@ -47,7 +47,7 @@ router.get("/", authenticateToken, async (req: any, res: Response) => {
 
 // assign members to the projects 
 
-router.post("/:id/members", authenticateToken, async (req: any, res: Response) => {
+router.post("/:id/members", authenticateToken, async (req: Request, res: Response) => {
     try {
         const projectid = req.params.id
         const user_to_add = req.body.userId
@@ -103,7 +103,7 @@ router.post("/:id/members", authenticateToken, async (req: any, res: Response) =
     }
 })
 
-router.delete("/:id/members/:userId", authenticateToken, async (req: any, res: Response) => {
+router.delete("/:id/members/:userId", authenticateToken, async (req:Request, res: Response) => {
     try {
         const projectId = req.params.id
         const user_id_to_remove = req.params.userId
@@ -145,7 +145,7 @@ router.delete("/:id/members/:userId", authenticateToken, async (req: any, res: R
 
 //Listing all submission for a project 
 
-router.get("/:id/submissions", authenticateToken, async (req: any, res: Response) => {
+router.get("/:id/submissions", authenticateToken, async (req: Request, res: Response) => {
 
     try {
 

@@ -27,7 +27,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
 
 // updating user profile
 
-router.put("/:id", authenticateToken, async (req: any, res: Response) => {
+router.put("/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userid = req.params.id
 
@@ -67,7 +67,7 @@ router.put("/:id", authenticateToken, async (req: any, res: Response) => {
 
 //Deleting user profile
 
-router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
+router.delete("/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userid = req.params.id
 

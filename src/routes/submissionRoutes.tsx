@@ -1,11 +1,11 @@
-import express, { Response } from "express"
+import express, { Response ,Request} from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
 
 const router = express.Router()
 
 //Creating submission
-router.post("/", authenticateToken, async (req: any, res: Response) => {
+router.post("/", authenticateToken, async (req: Request, res: Response) => {
     try {
         const project_id = req.body.projectId
         const code_content = req.body.codeContent
@@ -52,7 +52,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 
 //Viewing a specific submission by providing id 
 
-router.get("/:id", authenticateToken, async (req: any, res: Response) => {
+router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
 
     try {
         //receive submission id 
@@ -90,7 +90,7 @@ router.get("/:id", authenticateToken, async (req: any, res: Response) => {
 
 //Updating  submission status 
 
-router.patch("/:id/status", authenticateToken, async (req: any, res: Response) => {
+router.patch("/:id/status", authenticateToken, async (req: Request, res: Response) => {
 
     try {
         const submission_id = req.params.id
@@ -121,7 +121,7 @@ router.patch("/:id/status", authenticateToken, async (req: any, res: Response) =
 
 //deleting submission
 
-router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
+router.delete("/:id", authenticateToken, async (req: Request, res: Response) => {
 
     try {
 
@@ -150,7 +150,7 @@ router.delete("/:id", authenticateToken, async (req: any, res: Response) => {
 })
 
 //Adding comments 
-router.post("/:id/comments", authenticateToken, async (req: any, res: Response) => {
+router.post("/:id/comments", authenticateToken, async (req: Request, res: Response) => {
     try {
         const submission_id = req.params.id
         const comment = req.body.content
@@ -162,11 +162,12 @@ router.post("/:id/comments", authenticateToken, async (req: any, res: Response) 
         }
         if (!comment) {
             res.status(400).json({ message: "Comment is required." })
+            return;
         }
 
         //Check if submission with the id exists 
         const submission_res = await connectionPool.query(
-            "SELECT id FROM submission WHERE id=$1", [submission_id]
+            "SELECT id FROM submissions WHERE id=$1", [submission_id]
         )
 
         //if there's no results then there's no submission with that id 
@@ -190,14 +191,14 @@ router.post("/:id/comments", authenticateToken, async (req: any, res: Response) 
 
 //List comments for a submission
 
-router.get("/:id/comments",authenticateToken,async(req:any,res:Response)=>{
+router.get("/:id/comments",authenticateToken,async(req:Request,res:Response)=>{
     try{
        const submission_id = req.params.id
        
        //check if the submission exists 
 
        const list_results=await connectionPool.query(
-        "SELECT id FROM submission WHERE id=$1 RETURNING ",[submission_id]
+        "SELECT id FROM submissions WHERE id=$1",[submission_id]
        )
 
        if(list_results.rows.length===0){
@@ -206,7 +207,7 @@ router.get("/:id/comments",authenticateToken,async(req:any,res:Response)=>{
        }
 
        const comments=await connectionPool.query(
-        "SELECT id,submission_id,author_id,content FROM comments WHERE submission_id=$1 RETURNING submission_id,content",[submission_id]
+        "SELECT id,submission_id,author_id,content FROM comments WHERE submission_id=$1 ",[submission_id]
        )
        res.status(200).json(comments.rows)
 
