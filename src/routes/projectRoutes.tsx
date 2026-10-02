@@ -1,4 +1,4 @@
-import express, { Response ,Request} from "express"
+import express, { Response, Request } from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
 
@@ -103,7 +103,7 @@ router.post("/:id/members", authenticateToken, async (req: Request, res: Respons
     }
 })
 
-router.delete("/:id/members/:userId", authenticateToken, async (req:Request, res: Response) => {
+router.delete("/:id/members/:userId", authenticateToken, async (req: Request, res: Response) => {
     try {
         const projectId = req.params.id
         const user_id_to_remove = req.params.userId
@@ -170,6 +170,44 @@ router.get("/:id/submissions", authenticateToken, async (req: Request, res: Resp
     catch (error) {
         console.log(error)
         res.status(500).json({ message: "Something went wrong " })
+    }
+})
+
+//Get project stats 
+router.get("/:id/stats", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const project_id = req.params.id
+
+        //check if project id it is a number
+        if (!Number(project_id)) {
+            res.status(400).json({ message: "Project id must be a number" })
+            return;
+        }
+        //check if the project exists 
+        const project_res = await connectionPool.query(
+            "SELECT id FROM projects WHERE id=$1", [project_id]
+        )
+        if (project_res.rows.length === 0) {
+            res.status(404).json({ message: "No project found with this id" })
+            return;
+        }
+        //Grouping status of submission according to values
+        const status_stats = await connectionPool.query(
+            "SELECT status,COUNT(*) AS status_count FROM submissions WHERE project_id=$1 GROUP BY status", [project_id]
+        )
+
+        //List submission with most of comments 
+        const more_comments = await connectionPool.query(
+            "SELECT submissions.id AS submission_id,COUNT(comments.id) AS comments_count FROM submissions LEFT JOIN comments ON comments.submissions_id=submission.id WHERE submissions.project_id=$1 GROUP BY submissions.id ORDER BY comments_count DESC LIMIT 1 ", [project_id]
+        )
+        res.status(200).json({
+            status_count: status_stats.rows,
+            most_commented_submission: more_comments.rows[0] || null
+        })
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong" })
     }
 })
 
