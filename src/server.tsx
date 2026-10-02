@@ -5,7 +5,7 @@ import authRoutes from "./routes/auth_route"
 import userRoutes from "./routes/userRoutes"
 import projectRoutes from "./routes/projectRoutes"
 import submissionRoute from "./routes/submissionRoutes"
-
+import commentsRouter from "./routes/commentsRoutes"
 dotenv.config()
 
 const app = express()
@@ -16,6 +16,8 @@ app.use("/api/auth", authRoutes)
 app.use("/api/users", userRoutes)
 app.use("/api/projects", projectRoutes)
 app.use("/api/submission", submissionRoute)
+app.use("/api/comments",commentsRouter)
+
 
 app.get("/", (request, response) => {
     response.send("Collaborative code review platform")
