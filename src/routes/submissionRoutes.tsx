@@ -1,4 +1,4 @@
-import express, { Response ,Request} from "express"
+import express, { Response, Request } from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
 
@@ -191,30 +191,67 @@ router.post("/:id/comments", authenticateToken, async (req: Request, res: Respon
 
 //List comments for a submission
 
-router.get("/:id/comments",authenticateToken,async(req:Request,res:Response)=>{
-    try{
-       const submission_id = req.params.id
-       
-       //check if the submission exists 
+router.get("/:id/comments", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const submission_id = req.params.id
 
-       const list_results=await connectionPool.query(
-        "SELECT id FROM submissions WHERE id=$1",[submission_id]
-       )
+        //check if the submission exists 
 
-       if(list_results.rows.length===0){
-        res.status(404).json({message:"There's no submission with this id "})
-        return;
-       }
+        const list_results = await connectionPool.query(
+            "SELECT id FROM submissions WHERE id=$1", [submission_id]
+        )
 
-       const comments=await connectionPool.query(
-        "SELECT id,submission_id,author_id,content FROM comments WHERE submission_id=$1 ",[submission_id]
-       )
-       res.status(200).json(comments.rows)
+        if (list_results.rows.length === 0) {
+            res.status(404).json({ message: "There's no submission with this id " })
+            return;
+        }
+
+        const comments = await connectionPool.query(
+            "SELECT id,submission_id,author_id,content FROM comments WHERE submission_id=$1 ", [submission_id]
+        )
+        res.status(200).json(comments.rows)
 
     }
-    catch(error){
+    catch (error) {
         console.log(error)
-        res.status(500).json({message:"Something went wrong."})
+        res.status(500).json({ message: "Something went wrong." })
+    }
+})
+
+router.post("/:id/approve", authenticateToken, async (req: Request, res: Response) => {
+
+    try {
+        const id = req.params.id
+
+        //Ensures it is reviewer who is logged
+        if (req.user.role !== "reviewer") {
+            res.status(403).json({ message: "Only reviewer can approve submission" })
+            return;
+        }
+
+        //check if submission exists with that id 
+        const submission_res = await connectionPool.query(
+            "SELECT id FROM 0submissions WHERE id=$1", [id]
+        )
+
+        if (submission_res.rows.length === 0) {
+            res.status(404).json({ message: "There's no submission with this id " })
+            return;
+        }
+        //Update the submission status 
+        const updated_status = await connectionPool.query(
+            "UPDATE submissions SET status=$1 WHERE id=$2  RETURNING id,status", ["approved", id]
+        )
+
+        //Keep the status change in reviewer history 
+        await connectionPool.query(
+            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, req.user.id, "approved"]
+        )
+        res.status(200).json(updated_status.rows[0])
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong " })
     }
 })
 

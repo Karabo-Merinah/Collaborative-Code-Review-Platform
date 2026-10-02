@@ -44,3 +44,11 @@ CREATE TABLE project_members(
     user_id INTEGER NOT NULL REFERENCES users(id),
     added_at  TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE reviews(
+    id SERIAL PRIMARY KEY,
+    submission_id INTEGER NOT NULL REFERENCES submission(id),
+    reviewer_id INTEGER NOT NULL REFERENCES users(id),
+    action VARCHAR(40) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
