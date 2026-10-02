@@ -254,5 +254,38 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
         res.status(500).json({ message: "Something went wrong " })
     }
 })
+//Request changes 
 
+router.post("/:id/request-changes", authenticateToken, async (req: Request, res: Response) => {
+
+    try {
+        const id = req.params.id
+
+        //Checks if it is the reviewer who is logged in 
+        if (req.user.role !== "reviewer") {
+            res.status(403).json({ message: "Only reviewer is allowed to request changes." })
+            return;
+        }
+        const id_results = await connectionPool.query(
+            "SELECT id FROM submissions WHERE id=$1", [id]
+        )
+        //checks if the id exists 
+        if (id_results.rows.length === 0) {
+            res.status(404).json({ message: "Submission id is not found." })
+            return;
+        }
+        const updated_status = await connectionPool.query(
+            "UPDATE submissions SET status=$1 WHERE submission_id=$2 RETURNING id,submission_id,status", ["request-changes", id]
+        )
+        //insert the newl updated status to the table 
+        await connectionPool.query(
+            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3", [id, req.user.id, "changes requested"]
+        )
+        res.status(200).json(updated_status.rows[0])
+    }
+    catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Something went wrong." })
+    }
+})
 export default router
