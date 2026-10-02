@@ -45,5 +45,34 @@ router.patch("/:id",authenticateToken,async(req:any,res:Response)=>{
     }
 })
 
+//deleting comment of a given id 
+
+router.delete("/:id",authenticateToken,async(req:any,res:Response)=>{
+
+    try{
+        const id=req.params.id 
+
+        // check if the id is a number
+        if(!Number(id)){
+            res.status(400).json({message:"Comment id must be a number"})
+            return;
+        }
+
+        const delete_res=await connectionPool.query(
+            "DELETE FROM comments WHERE id=$1 RETURNING id",[id]
+        )
+        //check if id exists 
+
+        if(delete_res.rows.length===0){
+            res.status(404).json({message:"Comment with this id is not found"})
+            return;
+        }
+        res.status(204).send()
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json({message:"Something went wrong."})
+    }
+})
 
 export default router
