@@ -187,4 +187,34 @@ router.post("/:id/comments", authenticateToken, async (req: any, res: Response) 
         res.status(500).json({ message: "Something went wrong" })
     }
 })
+
+//List comments for a submission
+
+router.get("/:id/comments",authenticateToken,async(req:any,res:Response)=>{
+    try{
+       const submission_id = req.params.id
+       
+       //check if the submission exists 
+
+       const list_results=await connectionPool.query(
+        "SELECT id FROM submission WHERE id=$1 RETURNING ",[submission_id]
+       )
+
+       if(list_results.rows.length===0){
+        res.status(404).json({message:"There's no submission with this id "})
+        return;
+       }
+
+       const comments=await connectionPool.query(
+        "SELECT id,submission_id,author_id,content FROM comments WHERE submission_id=$1 RETURNING submission_id,content",[submission_id]
+       )
+       res.status(200).json(comments.rows)
+
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json({message:"Something went wrong."})
+    }
+})
+
 export default router
