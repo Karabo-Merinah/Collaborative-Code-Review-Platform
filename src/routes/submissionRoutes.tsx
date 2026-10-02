@@ -181,6 +181,14 @@ router.post("/:id/comments", authenticateToken, async (req: Request, res: Respon
         const writeComment = await connectionPool.query(
             "INSERT INTO comments(submission_id,author_id,content) VALUES($1,$2,$3) RETURNING id,submission_id,author_id,content,created_at", [submission_id, commenter_id, comment]
         )
+        //Notify the submitter 
+        const submission_owner=await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1",[submission_id]
+        )
+        await connectionPool.query(
+            "INSERT INTO notifications(user_id,message) VALUES($1,$2)",
+            [submission_owner.rows[0].submitted_by,"A comment has been added to your submission"]
+        )
         res.status(201).json(writeComment.rows[0])
     }
     catch (error) {
@@ -231,7 +239,7 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
 
         //check if submission exists with that id 
         const submission_res = await connectionPool.query(
-            "SELECT id FROM 0submissions WHERE id=$1", [id]
+            "SELECT id FROM submissions WHERE id=$1", [id]
         )
 
         if (submission_res.rows.length === 0) {
@@ -246,6 +254,14 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
         //Keep the status change in reviewer history 
         await connectionPool.query(
             "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, req.user.id, "approved"]
+        )
+           //Notify the submitter 
+        const submission_owner=await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1",[id]
+        )
+        await connectionPool.query(
+            "INSERT INTO notifications(user_id,message) VALUES($1,$2)",
+            [submission_owner.rows[0].submitted_by,"Your submission was approved."]
         )
         res.status(200).json(updated_status.rows[0])
     }
@@ -275,11 +291,18 @@ router.post("/:id/request-changes", authenticateToken, async (req: Request, res:
             return;
         }
         const updated_status = await connectionPool.query(
-            "UPDATE submissions SET status=$1 WHERE submission_id=$2 RETURNING id,submission_id,status", ["request-changes", id]
+            "UPDATE submissions SET status=$1 WHERE id=$2 RETURNING id,status", ["request_changes", id]
         )
         //insert the newl updated status to the table 
         await connectionPool.query(
-            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3", [id, req.user.id, "changes requested"]
+            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, req.user.id, "changes requested"]
+        )
+        //Notify the submitter
+        const submission_owner=await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1",[id]
+        )
+        await connectionPool.query(
+            "INSERT INTO notifications (user_id,message) VALUES($1,$2)",[submission_owner.rows[0].submitted_by,"Changes were requested on your submission."]
         )
         res.status(200).json(updated_status.rows[0])
     }
@@ -305,12 +328,15 @@ router.get("/:id/reviews", authenticateToken, async (req: Request, res: Response
         const reviews = await connectionPool.query(
             "SELECT * FROM reviews WHERE submission_id=$1", [id]
         )
-        res.status(200).json(reviews.rows[0])
+        res.status(200).json(reviews.rows)
     }
     catch (error) {
         console.log(error)
         res.status(500).json({ message: "Something went wrong." })
     }
 })
+
+
+
 
 export default router

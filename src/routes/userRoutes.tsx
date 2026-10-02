@@ -91,4 +91,27 @@ router.delete("/:id", authenticateToken, async (req: Request, res: Response) => 
         res.status(500).json({ message: "Something went wrong" })
     }
 })
+
+//view user activity feed 
+
+router.get("/:id/notifications",authenticateToken,async(req:Request,res:Response)=>{
+    try{
+        const id=req.params.id 
+
+        //Only logged in users can view their notifications
+        if(req.user.id !==Number(id)){
+            res.status(403).json({message:"You can only view yout notifications"})
+            return;
+        }
+
+        const notifications=await connectionPool.query(
+            "SELECT id,message,created_at FROM notifications WHERE user_id=$1",[id]
+        )
+        res.status(200).json(notifications.rows)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json({message:"Something went wrong."})
+    }
+})
 export default router
