@@ -36,7 +36,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
         const decoded = jwt.verify(token, jwt_url) as any
 
         //Saves user info 
-        req.user = { id: decoded.id, role: decoded.role }
+        (req as any).user = { id: decoded.id, role: decoded.role }
 
         //when the request is finished move to the next one 
         next()
@@ -47,11 +47,11 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
 }
 export function allowReviewer(req: Request, res: Response, next: NextFunction) {
-    if (!req.user) {
+    if (!(req as any).user) {
         res.status(401).json({ message: "You have to be logged in first" })
         return;
     }
-    if (req.user.role !== "reviewer") {
+    if ((req as any).user.role !== "reviewer") {
         res.status(403).json({ message: "This is only permitted for reviewers" })
         return;
     }
@@ -59,11 +59,11 @@ export function allowReviewer(req: Request, res: Response, next: NextFunction) {
 }
 
 export function allowSubmitters(req: Request, res: Response, next: NextFunction) {
-    if (!req.user) {
+    if (!(req as any).user) {
         res.status(401).json({ message: "You have to be logged in first" })
         return;
     }
-    if (req.user.role !== "submitter") {
+    if ((req as any).user.role !== "submitter") {
         res.status(403).json({ message: "This is only permitted for submitters" })
         return;
     }

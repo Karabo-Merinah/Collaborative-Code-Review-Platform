@@ -1,7 +1,7 @@
 import express, { Response, Request } from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
-
+import { sendMessage } from "../server"
 const router = express.Router()
 
 //Creating submission
@@ -33,7 +33,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
 
         //  Makes the logged in user becomes submitter
 
-        const submitter = req.user.id
+        const submitter = (req as any).user!.id
 
         const createSubmission = await connectionPool.query(
             "INSERT INTO submissions (project_id,submitted_by,code_content) VALUES($1,$2,$3) RETURNING id,project_id,submitted_by,code_content,status,created_at",
@@ -156,7 +156,7 @@ router.post("/:id/comments", authenticateToken, async (req: Request, res: Respon
         const comment = req.body.content
 
         //Only reviewers are allowed to comment
-        if (req.user.role !== "reviewer") {
+        if ((req as any).user!.role !== "reviewer") {
             res.status(403).json({ message: "Only reviewers are allowed to comment" })
             return;
         }
@@ -176,18 +176,19 @@ router.post("/:id/comments", authenticateToken, async (req: Request, res: Respon
             return;
         }
 
-        const commenter_id = req.user.id
+        const commenter_id = (req as any).user!.id
 
         const writeComment = await connectionPool.query(
             "INSERT INTO comments(submission_id,author_id,content) VALUES($1,$2,$3) RETURNING id,submission_id,author_id,content,created_at", [submission_id, commenter_id, comment]
         )
+        sendMessage(`New comment on submission ${submission_id}`)
         //Notify the submitter 
-        const submission_owner=await connectionPool.query(
-            "SELECT submitted_by FROM submissions WHERE id=$1",[submission_id]
+        const submission_owner = await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1", [submission_id]
         )
         await connectionPool.query(
             "INSERT INTO notifications(user_id,message) VALUES($1,$2)",
-            [submission_owner.rows[0].submitted_by,"A comment has been added to your submission"]
+            [submission_owner.rows[0].submitted_by, "A comment has been added to your submission"]
         )
         res.status(201).json(writeComment.rows[0])
     }
@@ -232,7 +233,7 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
         const id = req.params.id
 
         //Ensures it is reviewer who is logged
-        if (req.user.role !== "reviewer") {
+        if ((req as any).user!.role !== "reviewer") {
             res.status(403).json({ message: "Only reviewer can approve submission" })
             return;
         }
@@ -253,15 +254,15 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
 
         //Keep the status change in reviewer history 
         await connectionPool.query(
-            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, req.user.id, "approved"]
+            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, (req as any).user!.id, "approved"]
         )
-           //Notify the submitter 
-        const submission_owner=await connectionPool.query(
-            "SELECT submitted_by FROM submissions WHERE id=$1",[id]
+        //Notify the submitter 
+        const submission_owner = await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1", [id]
         )
         await connectionPool.query(
             "INSERT INTO notifications(user_id,message) VALUES($1,$2)",
-            [submission_owner.rows[0].submitted_by,"Your submission was approved."]
+            [submission_owner.rows[0].submitted_by, "Your submission was approved."]
         )
         res.status(200).json(updated_status.rows[0])
     }
@@ -278,7 +279,7 @@ router.post("/:id/request-changes", authenticateToken, async (req: Request, res:
         const id = req.params.id
 
         //Checks if it is the reviewer who is logged in 
-        if (req.user.role !== "reviewer") {
+        if ((req as any).user!.role !== "reviewer") {
             res.status(403).json({ message: "Only reviewer is allowed to request changes." })
             return;
         }
@@ -291,18 +292,18 @@ router.post("/:id/request-changes", authenticateToken, async (req: Request, res:
             return;
         }
         const updated_status = await connectionPool.query(
-            "UPDATE submissions SET status=$1 WHERE id=$2 RETURNING id,status", ["request_changes", id]
+            "UPDATE submissions SET status=$1 WHERE id=$2 RETURNING id,status", ["changes_requested", id]
         )
         //insert the newl updated status to the table 
         await connectionPool.query(
-            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, req.user.id, "changes requested"]
+            "INSERT INTO reviews (submission_id,reviewer_id,action) VALUES($1,$2,$3)", [id, (req as any).user!.id, "changes_requested"]
         )
         //Notify the submitter
-        const submission_owner=await connectionPool.query(
-            "SELECT submitted_by FROM submissions WHERE id=$1",[id]
+        const submission_owner = await connectionPool.query(
+            "SELECT submitted_by FROM submissions WHERE id=$1", [id]
         )
         await connectionPool.query(
-            "INSERT INTO notifications (user_id,message) VALUES($1,$2)",[submission_owner.rows[0].submitted_by,"Changes were requested on your submission."]
+            "INSERT INTO notifications (user_id,message) VALUES($1,$2)", [submission_owner.rows[0].submitted_by, "Changes were requested on your submission."]
         )
         res.status(200).json(updated_status.rows[0])
     }

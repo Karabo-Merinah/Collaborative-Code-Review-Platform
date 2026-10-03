@@ -16,7 +16,7 @@ router.post("/", authenticateToken, async (req: Request, res: Response) => {
             return;
         }
         //Makes the logged in user the owner of the project 
-        const ownerId = req.user.id
+        const ownerId = (req as any).user!.id
 
         const newProject = await connectionPool.query(
             "INSERT INTO projects(name,description,owner_id) VALUES($1,$2,$3) RETURNING id,name,description,owner_id,created_at",
@@ -69,7 +69,7 @@ router.post("/:id/members", authenticateToken, async (req: Request, res: Respons
         const project = projectresult.rows[0]
 
         //only the project owner can add members
-        if (project.owner_id !== req.user.id) {
+        if (project.owner_id !== (req as any).user!.id) {
             res.status(403).json({ message: "Only project owner can add memebrs." })
             return;
         }
@@ -119,7 +119,7 @@ router.delete("/:id/members/:userId", authenticateToken, async (req: Request, re
         const project = projectresults.rows[0]
 
         //Ensures only the project owner can remove members
-        if (project.owner_id !== req.user.id) {
+        if (project.owner_id !== (req as any).user!.id) {
             res.status(403).json({ message: "Only project owner can remove members" })
             return;
         }

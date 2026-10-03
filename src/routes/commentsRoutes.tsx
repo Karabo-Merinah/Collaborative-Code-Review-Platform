@@ -23,7 +23,7 @@ router.patch("/:id",authenticateToken,async(req:Request,res:Response)=>{
             res.status(400).json({message:"Comment content is required."})
             return;
         }
-        if(req.user.role !=="reviewer"){
+        if((req as any).user.role !=="reviewer"){
             res.status(403).json({message:"Only reviewer can update the comment "})
             return;
         

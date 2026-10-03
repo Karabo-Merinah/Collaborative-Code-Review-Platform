@@ -33,7 +33,7 @@ router.put("/:id", authenticateToken, async (req: Request, res: Response) => {
 
         //Allow only logged in users to edit
 
-        if (req.user.id !== Number(userid)) {
+        if ((req as any).user!.id !== Number(userid)) {
             res.status(403).json({ message: "You can only edit your own profile" })
             return;
         }
@@ -73,7 +73,7 @@ router.delete("/:id", authenticateToken, async (req: Request, res: Response) => 
 
         //Only logged in users can delete their own profile
 
-        if (req.user.id !== Number(userid)) {
+        if ((req as any).user!.id !== Number(userid)) {
             res.status(403).json({ message: "You can only delete your own profile" })
             return;
         }
@@ -99,7 +99,7 @@ router.get("/:id/notifications",authenticateToken,async(req:Request,res:Response
         const id=req.params.id 
 
         //Only logged in users can view their notifications
-        if(req.user.id !==Number(id)){
+        if((req as any).user!.id !==Number(id)){
             res.status(403).json({message:"You can only view yout notifications"})
             return;
         }

@@ -118,7 +118,7 @@ router.post("/login", async (req: Request, res: Response) => {
 })
 
 router.get("/me", authenticateToken, (req: Request, res: Response) => {
-    res.status(200).json({ message: "You are logged in ", user: req.user })
+    res.status(200).json({ message: "You are logged in ", user: (req as any).use })
 })
 
 router.get("/reviewer", authenticateToken, allowReviewer, (req: Request, res: Response) => {
