@@ -198,11 +198,23 @@ router.get("/:id/stats", authenticateToken, async (req: Request, res: Response) 
 
         //List submission with most of comments 
         const more_comments = await connectionPool.query(
-            "SELECT submissions.id AS submission_id,COUNT(comments.id) AS comments_count FROM submissions LEFT JOIN comments ON comments.submissions_id=submission.id WHERE submissions.project_id=$1 GROUP BY submissions.id ORDER BY comments_count DESC LIMIT 1 ", [project_id]
+            "SELECT submissions.id AS submission_id,COUNT(comments.id) AS comments_count FROM submissions LEFT JOIN comments ON comments.submission_id=submissions.id WHERE submissions.project_id=$1 GROUP BY submissions.id ORDER BY comments_count DESC LIMIT 1 ", [project_id]
+        )
+        //How long between submission created and getting its first time review
+        const average_review_time = await connectionPool.query(
+            "SELECT AVG(reviews.created_at -submissions.created_at) AS average_review_time FROM submissions JOIN reviews ON reviews.submission_id=submissions.id WHERE submissions.project_id=$1",
+            [project_id]
+        )
+        //Counts number of time each reviewer has reviewed a project 
+        const reviewer_activity = await connectionPool.query(
+            "SELECT users.name,COUNT(*) AS review_count FROM reviews JOIN submissions ON submissions.id=reviews.submission_id JOIN users ON users.id=reviews.reviewer_id WHERE submissions.project_id=$1 GROUP BY users.name",
+            [project_id]
         )
         res.status(200).json({
             status_count: status_stats.rows,
-            most_commented_submission: more_comments.rows[0] || null
+            most_commented_submission: more_comments.rows[0] || null,
+            avg_review_time: average_review_time.rows[0].average_review_time,
+            reviewer_activity: reviewer_activity.rows
         })
     }
     catch (error) {
