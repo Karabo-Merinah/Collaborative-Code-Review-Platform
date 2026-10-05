@@ -260,6 +260,7 @@ router.post("/:id/approve", authenticateToken, async (req: Request, res: Respons
         const submission_owner = await connectionPool.query(
             "SELECT submitted_by FROM submissions WHERE id=$1", [id]
         )
+         sendMessage(`Submission is approved `)
         await connectionPool.query(
             "INSERT INTO notifications(user_id,message) VALUES($1,$2)",
             [submission_owner.rows[0].submitted_by, "Your submission was approved."]
@@ -305,6 +306,7 @@ router.post("/:id/request-changes", authenticateToken, async (req: Request, res:
         await connectionPool.query(
             "INSERT INTO notifications (user_id,message) VALUES($1,$2)", [submission_owner.rows[0].submitted_by, "Changes were requested on your submission."]
         )
+         sendMessage(`Changes are requested on your submission `)
         res.status(200).json(updated_status.rows[0])
     }
     catch (error) {
