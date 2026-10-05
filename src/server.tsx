@@ -7,6 +7,7 @@ import userRoutes from "./routes/userRoutes"
 import projectRoutes from "./routes/projectRoutes"
 import submissionRoute from "./routes/submissionRoutes"
 import commentsRouter from "./routes/commentsRoutes"
+import { errorHandler } from "./middleware/errorMiddleware"
 
 dotenv.config()
 
@@ -24,6 +25,7 @@ app.use("/api/comments", commentsRouter)
 app.get("/", (request, response) => {
     response.send("Collaborative code review platform")
 })
+app.use(errorHandler)
 const httpServer = app.listen(port, () => {
     console.log("Server is listening on port ", port)
 })
