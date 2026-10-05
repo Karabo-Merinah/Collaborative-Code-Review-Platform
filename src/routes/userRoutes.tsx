@@ -2,6 +2,7 @@ import express, { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
+import { validateFields } from "../middleware/validationMiddleware"
 
 const router = express.Router()
 //View profile -read operation 
@@ -27,7 +28,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
 
 // updating user profile
 
-router.put("/:id", authenticateToken, async (req: Request, res: Response) => {
+router.put("/:id", authenticateToken,validateFields(["name","email"]), async (req: Request, res: Response) => {
     try {
         const userid = req.params.id
 
@@ -41,14 +42,6 @@ router.put("/:id", authenticateToken, async (req: Request, res: Response) => {
         const email = req.body.email
         const profile_picture = req.body.profile_picture
 
-        if (!name) {
-            res.status(400).json({ message: "Name is required" })
-            return;
-        }
-        if (!email) {
-            res.status(400).json({ message: "Name is required" })
-            return;
-        }
         const update_user_profile = await connectionPool.query(
             "UPDATE users SET name=$1,email=$2,profile_picture=$3 WHERE id=$4 RETURNING id,name,email,role,profile_picture,created_at",
             [name, email, profile_picture, userid]

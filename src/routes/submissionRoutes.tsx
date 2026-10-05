@@ -2,25 +2,14 @@ import express, { Response, Request } from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
 import { sendMessage } from "../server"
+import { validateFields } from "../middleware/validationMiddleware"
 const router = express.Router()
 
 //Creating submission
-router.post("/", authenticateToken, async (req: Request, res: Response) => {
+router.post("/", authenticateToken, validateFields(["projectId,codeContent"]),async (req: Request, res: Response) => {
     try {
         const project_id = req.body.projectId
         const code_content = req.body.codeContent
-
-        //Makes the fields are required
-
-        if (!project_id) {
-            res.status(400).json({ message: "Project id is required" })
-            return;
-        }
-
-        if (!code_content) {
-            res.status(400).json({ message: "Code content is required" })
-            return;
-        }
 
         //Check if the project exists 
         const project_results = await connectionPool.query(
@@ -150,7 +139,7 @@ router.delete("/:id", authenticateToken, async (req: Request, res: Response) => 
 })
 
 //Adding comments 
-router.post("/:id/comments", authenticateToken, async (req: Request, res: Response) => {
+router.post("/:id/comments", authenticateToken,validateFields(["content"]), async (req: Request, res: Response) => {
     try {
         const submission_id = req.params.id
         const comment = req.body.content
@@ -160,11 +149,7 @@ router.post("/:id/comments", authenticateToken, async (req: Request, res: Respon
             res.status(403).json({ message: "Only reviewers are allowed to comment" })
             return;
         }
-        if (!comment) {
-            res.status(400).json({ message: "Comment is required." })
-            return;
-        }
-
+        
         //Check if submission with the id exists 
         const submission_res = await connectionPool.query(
             "SELECT id FROM submissions WHERE id=$1", [submission_id]

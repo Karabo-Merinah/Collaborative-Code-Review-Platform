@@ -1,20 +1,15 @@
 import express, { Response, Request } from "express"
 import connectionPool from "../config/database"
 import { authenticateToken } from "../middleware/authenticationMiddleware"
-
+import { validateFields } from "../middleware/validationMiddleware"
 const router = express.Router()
 
 //Create project using post method
-router.post("/", authenticateToken, async (req: Request, res: Response) => {
+router.post("/", authenticateToken,validateFields(["name"]), async (req: Request, res: Response) => {
     try {
         const name = req.body.name
         const description = req.body.description
 
-        //Ensures that fields are filled in
-        if (!name) {
-            res.status(400).json({ message: "Name is required" })
-            return;
-        }
         //Makes the logged in user the owner of the project 
         const ownerId = (req as any).user!.id
 
@@ -47,17 +42,11 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
 
 // assign members to the projects 
 
-router.post("/:id/members", authenticateToken, async (req: Request, res: Response) => {
+router.post("/:id/members",validateFields(["userId"]),authenticateToken, async (req: Request, res: Response) => {
     try {
         const projectid = req.params.id
         const user_to_add = req.body.userId
-
-        //Ensures that a user id is not empty 
-        if (!user_to_add) {
-            res.status(400).json({ message: "User id is required." })
-            return;
-
-        }
+        
         //check if project exists ,if so get its owner
         const projectresult = await connectionPool.query(
             "SELECT owner_id FROM projects WHERE id=$1", [projectid]

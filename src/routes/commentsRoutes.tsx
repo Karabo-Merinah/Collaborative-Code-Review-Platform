@@ -1,11 +1,11 @@
 import express,{ Response,Request } from "express";
 import { authenticateToken } from "../middleware/authenticationMiddleware";
 import connectionPool from "../config/database";
-
+import { validateFields } from "../middleware/validationMiddleware";
 const router=express.Router()
 
 //updating comment 
-router.patch("/:id",authenticateToken,async(req:Request,res:Response)=>{
+router.patch("/:id",authenticateToken,validateFields(["content"]),async(req:Request,res:Response)=>{
 
     try{
         
@@ -17,12 +17,7 @@ router.patch("/:id",authenticateToken,async(req:Request,res:Response)=>{
          res.status(400).json({message:"Comment id must be a number"})
          return;   
         }
-        //ensure that the updated comment is not empty 
 
-        if(!new_comment){
-            res.status(400).json({message:"Comment content is required."})
-            return;
-        }
         if((req as any).user.role !=="reviewer"){
             res.status(403).json({message:"Only reviewer can update the comment "})
             return;
